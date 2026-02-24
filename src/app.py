@@ -5,7 +5,7 @@ from database import init_db, save_violation_to_db, get_all_violations
 app = Flask(__name__)
 
 # 전역 변수로 스트리밍 주소 관리 (초기값은 플레이스홀더)
-streaming_url = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="
+streaming_url = "http://210.99.70.120:1935/live/cctv006.stream/playlist.m3u8"
 
 with app.app_context():
     init_db()
