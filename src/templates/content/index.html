@@ -1,4 +1,6 @@
-{% extends 'layout.html' %}  {% block title %}CCTV 관제실 - 홈{% endblock %}
+{% extends 'layout.html' %}
+
+{% block title %}CCTV 관제실 - 홈{% endblock %}
 
 {% block user_area %}
 <a class="btn" href="{{ url_for('monitoring') }}">모니터링 시작</a>
@@ -6,11 +8,53 @@
 
 {% block content %}
 <div class="page" id="overview">
-    <h2>🎥CCTV 관제실</h2>
+    <h2>🎥 CCTV 관제 실시간 현황</h2>
+    
+    <div class="video-card" style="margin-bottom: 20px;">
+        <div class="video-frame" style="background: #000; border-radius: 8px; overflow: hidden; position: relative; min-height: 400px;">
+            <img id="main-video-feed" src="{{ current_stream }}" alt="Main Feed" style="width: 100%; display: block;" />
+            <div id="stream-overlay" style="position: absolute; top: 10px; left: 10px; color: #00ff00; font-size: 0.8rem; background: rgba(0,0,0,0.5); padding: 2px 5px;">
+                LIVE FEED
+            </div>
+        </div>
+    </div>
+
+    <div class="card" style="width: 100%; margin-bottom: 20px; background: #2a2a2a; border: 1px solid #444;">
+        <h3 style="margin-top: 0;">🌐 스트리밍 주소 설정</h3>
+        <div style="display: flex; gap: 10px;">
+            <input type="text" id="indexServerAddr" value="{{ current_stream }}" 
+                   style="flex: 1; padding: 10px; border-radius: 4px; border: 1px solid #555; background: #1a1a1a; color: white;">
+            <button id="applyStreamBtn" class="btn primary">주소 적용</button>
+        </div>
+    </div>
+
     <div class="cards">
         <div class="card">카메라<br/><span class="big">12</span></div>
         <div class="card">알람<br/><span class="big">3</span></div>
         <div class="card">연결 상태<br/><span class="big">Good</span></div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // 주소 적용 버튼 클릭 시 서버로 전송 및 화면 갱신
+    document.getElementById('applyStreamBtn').addEventListener('click', () => {
+        const newUrl = document.getElementById('indexServerAddr').value;
+        
+        fetch('/api/set_stream', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ url: newUrl })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.status === "success") {
+                document.getElementById('main-video-feed').src = data.url;
+                alert("홈 화면 스트리밍 주소가 갱신되었습니다.");
+            }
+        })
+        .catch(err => alert("에러 발생: " + err));
+    });
+</script>
 {% endblock %}
