@@ -1,17 +1,13 @@
-{% extends 'layout.html' %}
-
-{% block title %}CCTV 관제실 - 홈{% endblock %}
+{% extends 'layout.html' %}  {% block title %}CCTV 관제실 - 홈{% endblock %}
 
 {% block user_area %}
 <a class="btn" href="{{ url_for('monitoring') }}">모니터링 시작</a>
-<!-- # 직접 참조: <a class="btn" href="monitoring.html">모니터링 시작</a> -->
 {% endblock %}
 
 {% block content %}
 <div class="page" id="overview">
     <h2>🎥CCTV 관제실</h2>
     <div class="cards">
-        <!-- # TODO: 서버에서 실시간 통계 데이터를 렌더링 -->
         <div class="card">카메라<br/><span class="big">12</span></div>
         <div class="card">알람<br/><span class="big">3</span></div>
         <div class="card">연결 상태<br/><span class="big">Good</span></div>
