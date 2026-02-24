@@ -1,0 +1,17 @@
+<header class="topbar">
+    <div class="left">
+        <img id="logo" src="{{ url_for('static', filename='images/logo.png') }}" alt="logo" />
+        <!-- # 직접 참조: <img id="logo" src="../../static/images/logo.png" alt="logo" /> -->
+        <div class="brand">
+            <h1>Yellow YOLO</h1>
+            <div class="subtitle">CCTV 관제 대시보드</div>
+        </div>
+    </div>
+    <div class="right">
+        <div id="userArea">
+            {% block user_area %}
+            <!-- # 로그인 기능 제거됨 -->
+            {% endblock %}
+        </div>
+    </div>
+</header>

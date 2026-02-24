@@ -1,0 +1,12 @@
+<aside class="sidebar">
+    <nav>
+        <ul>
+            <li><a href="#" data-page="overview" class="{% if active_page == 'overview' %}active{% endif %}">Overview</a></li>
+            <li><a href="#" data-page="live" class="{% if active_page == 'live' %}active{% endif %}">Live Feeds</a></li>
+            <li><a href="#" data-page="playback" class="{% if active_page == 'playback' %}active{% endif %}">Playback</a></li>
+            <li><a href="#" data-page="settings" class="{% if active_page == 'settings' %}active{% endif %}">Settings</a></li>
+        </ul>
+    </nav>
+    {% block sidebar_extra %}
+    {% endblock %}
+</aside>

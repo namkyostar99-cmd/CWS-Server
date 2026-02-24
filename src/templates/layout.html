@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>{% block title %}CCTV 관제실{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+    <!-- # 직접 참조: <link rel="stylesheet" href="../../static/css/styles.css" /> -->
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    {% include 'common/header.html' %}
+    
+    <main class="container">
+        {% include 'common/nav.html' %}
+        
+        <section class="content" id="content">
+            {% block content %}
+            {% endblock %}
+        </section>
+    </main>
+    
+    {% include 'common/footer.html' %}
+    
+    <script src="{{ url_for('static', filename='js/logic.js') }}"></script>
+    <!-- # 직접 참조: <script src="../../static/js/logic.js"></script> -->
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
