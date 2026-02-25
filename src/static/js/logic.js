@@ -122,4 +122,28 @@ document.addEventListener('DOMContentLoaded', () => {
   // initial render
   showPage('live');
   setRoiLog();
+
+  document.addEventListener('DOMContentLoaded', function() {
+    // 위반기록 조회 버튼(data-page="playback")을 찾아 클릭 이벤트 추가
+    const dbMenuBtn = document.querySelector('a[data-page="playback"]');
+    
+    if (dbMenuBtn) {
+        dbMenuBtn.addEventListener('click', function(e) {
+            // 기존 logic.js의 기본 동작(e.preventDefault 등)이 있다면 무시하고 강제 이동
+            e.preventDefault(); 
+            window.location.href = '/monitoring';
+        });
+    }
+
+    // 추가로 Live Feeds(data-page="overview") 클릭 시 홈으로 이동 보장
+    const liveMenuBtn = document.querySelector('a[data-page="overview"]');
+    if (liveMenuBtn) {
+        liveMenuBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            window.location.href = '/';
+        });
+    }
+ });
+
 });
+
