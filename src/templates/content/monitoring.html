@@ -75,7 +75,7 @@
                 
                 if (h === 'evidence_url') {
                     td.innerHTML = `<a href="${row[h]}" target="_blank" style="color: #007bff;">[증거보기]</a>`;
-                    print (row[h]);
+                    console.log("Evidence URL:", row[h]);
                 } else {
                     td.textContent = row[h];
                 }
