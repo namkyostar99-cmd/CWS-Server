@@ -1,12 +1,53 @@
-<aside class="sidebar">
-    <nav>
-        <ul>
-            <li><a href="#" data-page="overview" class="{% if active_page == 'overview' %}active{% endif %}">Overview</a></li>
-            <li><a href="#" data-page="live" class="{% if active_page == 'live' %}active{% endif %}">Live Feeds</a></li>
-            <li><a href="#" data-page="playback" class="{% if active_page == 'playback' %}active{% endif %}">Playback</a></li>
-            <li><a href="#" data-page="settings" class="{% if active_page == 'settings' %}active{% endif %}">Settings</a></li>
+<aside class="sidebar" style="width: 260px; height: 100vh; background: #1a1b1e; border-right: 1px solid #333; position: fixed; left: 0; top: 0;">
+    
+    <div class="sidebar-logo" style="padding: 30px 20px; text-align: center; border-bottom: 1px solid #333;">
+        <a href="/">
+            <img src="/static/assets/logo.png" alt="CWS LOGO" style="width: 140px; filter: brightness(0) invert(1);">
+        </a>
+    </div>
+
+    <nav class="sidebar-nav" style="padding: 20px 0;">
+        <ul style="list-style: none; padding: 0; margin: 0;">
+            
+            <li style="margin-bottom: 5px;">
+                <a href="{{ url_for('index') }}" 
+                   class="nav-link {% if active_page == 'overview' %}active{% endif %}"
+                   style="display: flex; align-items: center; padding: 15px 25px; color: #adb5bd; text-decoration: none; transition: 0.3s;">
+                    <span style="margin-right: 12px; font-size: 1.2rem;">📺</span> 실시간 모니터링
+                </a>
+            </li>
+
+            <li style="margin-bottom: 5px;">
+                <a href="{{ url_for('monitoring') }}" 
+                   class="nav-link {% if active_page == 'live' %}active{% endif %}"
+                   style="display: flex; align-items: center; padding: 15px 25px; color: #adb5bd; text-decoration: none; transition: 0.3s;">
+                    <span style="margin-right: 12px; font-size: 1.2rem;">📂</span> 위반기록 DB
+                </a>
+            </li>
+
+            <li style="margin-bottom: 5px;">
+                <a href="#" style="display: flex; align-items: center; padding: 15px 25px; color: #444; text-decoration: none; cursor: not-allowed;">
+                    <span style="margin-right: 12px; font-size: 1.2rem;">⚙️</span> 시스템 설정
+                </a>
+            </li>
         </ul>
     </nav>
-    {% block sidebar_extra %}
-    {% endblock %}
+
+    <div class="sidebar-footer" style="position: absolute; bottom: 20px; width: 100%; padding: 0 25px; color: #555; font-size: 0.8rem;">
+        <p>© 2026 CWS Edge System</p>
+    </div>
 </aside>
+
+<style>
+    /* 활성화된 메뉴 스타일 */
+    .nav-link:hover {
+        background: #2b2c32;
+        color: #fff !important;
+    }
+    .nav-link.active {
+        background: #343a40;
+        color: #007bff !important;
+        border-left: 4px solid #007bff;
+        font-weight: bold;
+    }
+</style>

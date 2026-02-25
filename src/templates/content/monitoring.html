@@ -1,87 +1,86 @@
 {% extends 'layout.html' %}
 
 {% block content %}
-<div class="page" id="live">
+<div class="main-body" style="padding: 20px;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <div>
-            <button class="btn" onclick="loadTable('config')" style="margin-right: 5px;">테이블1 (설정)</button>
-            <button class="btn" onclick="loadTable('violations')">테이블2 (기록)</button>
+            <button onclick="loadTableData('1')" style="padding: 10px 20px; cursor: pointer;">테이블1 (설정)</button>
+            <button onclick="loadTableData('2')" style="padding: 10px 20px; cursor: pointer;">테이블2 (기록)</button>
         </div>
-        <button class="btn primary" onclick="refreshCurrentTable()">🔄 실시간 갱신</button>
+        <button class="btn primary" onclick="refreshTable()" style="padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 4px;">🔄 실시간 갱신</button>
     </div>
 
-    <h3 style="color: #fff;">📁 현재 DB: <span id="tableNameDisplay" style="color: #00ff00;">violations</span></h3>
+    <h3 style="color: #fff; margin-bottom: 10px;">📁 현재 조회 중인 테이블: <span id="table-title" style="color: #ffc107;">violations</span></h3>
 
-    <div class="table-container" style="max-height: 600px; overflow-y: auto; background: #1a1a1a; border: 1px solid #444; border-radius: 8px;">
-        <table id="dbDataTable" style="width: 100%; border-collapse: collapse; color: #ccc; text-align: left;">
-            <thead id="tableHead" style="background: #333; position: sticky; top: 0;">
+    <div class="table-wrapper" style="background: #2a2a2a; border-radius: 8px; overflow-x: auto; max-height: 600px;">
+        <table id="db-data-table" style="width: 100%; border-collapse: collapse; color: #ddd; text-align: left;">
+            <thead id="thead" style="background: #333; position: sticky; top: 0;">
                 </thead>
-            <tbody id="tableBody">
+            <tbody id="tbody">
                 </tbody>
         </table>
     </div>
 </div>
-{% endblock %}
 
-{% block extra_js %}
 <script>
-    let currentTableType = 'violations';
+    let currentType = '2'; // 기본 테이블2
 
-    function loadTable(type) {
-        currentTableType = type;
-        document.getElementById('tableNameDisplay').textContent = type === 'config' ? 'stream_config' : 'violations';
-        
-        // 실제 API 호출 (예시 주소)
-        fetch(`/api/get_table_data?type=${type}`)
+    function loadTableData(type) {
+        currentType = type;
+        fetch(`/api/get_table?type=${type}`)
             .then(res => res.json())
-            .then(data => renderDataTable(data));
+            .then(response => {
+                document.getElementById('table-title').textContent = response.name;
+                renderTable(response.data);
+            });
     }
 
-    function renderDataTable(data) {
-        const head = document.getElementById('tableHead');
-        const body = document.getElementById('tableBody');
-        head.innerHTML = '';
-        body.innerHTML = '';
+    function renderTable(data) {
+        const thead = document.getElementById('thead');
+        const tbody = document.getElementById('tbody');
+        thead.innerHTML = '';
+        tbody.innerHTML = '';
 
         if (data.length === 0) {
-            body.innerHTML = '<tr><td colspan="5" style="padding: 20px; text-align: center;">데이터가 없습니다.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="10" style="padding: 20px; text-align: center;">데이터가 없습니다.</td></tr>';
             return;
         }
 
-        // 1. 헤더 생성 (데이터의 키값 기준)
-        const keys = Object.keys(data[0]);
+        // 헤더 생성
+        const headers = Object.keys(data[0]);
         const trHead = document.createElement('tr');
-        keys.forEach(key => {
+        headers.forEach(h => {
             const th = document.createElement('th');
-            th.style = "padding: 12px; border-bottom: 1px solid #444;";
-            th.textContent = key.toUpperCase();
+            th.style = "padding: 15px; border-bottom: 2px solid #444;";
+            th.textContent = h.toUpperCase();
             trHead.appendChild(th);
         });
-        head.appendChild(trHead);
+        thead.appendChild(trHead);
 
-        // 2. 바디 생성
+        // 데이터 행 생성
         data.forEach(row => {
             const tr = document.createElement('tr');
-            keys.forEach(key => {
+            headers.forEach(h => {
                 const td = document.createElement('td');
                 td.style = "padding: 12px; border-bottom: 1px solid #333;";
-                // 증거 URL(이미지)인 경우 링크나 썸네일로 표시
-                if (key === 'evidence_url' || key === 'image') {
-                    td.innerHTML = `<a href="${row[key]}" target="_blank" style="color: #00ff00;">보기</a>`;
+                
+                // 이미지 URL 처리
+                if (h === 'evidence_url') {
+                    td.innerHTML = `<a href="${row[h]}" target="_blank" style="color: #007bff;">[증거보기]</a>`;
                 } else {
-                    td.textContent = row[key];
+                    td.textContent = row[h];
                 }
                 tr.appendChild(td);
             });
-            body.appendChild(tr);
+            tbody.appendChild(tr);
         });
     }
 
-    function refreshCurrentTable() {
-        loadTable(currentTableType);
+    function refreshTable() {
+        loadTableData(currentType);
     }
 
     // 초기 로드
-    document.addEventListener('DOMContentLoaded', () => loadTable('violations'));
+    window.onload = () => loadTableData('2');
 </script>
 {% endblock %}
