@@ -23,15 +23,24 @@
 </div>
 
 <script>
-    let currentType = '2'; // 기본 테이블2
+    let currentType = '2'; 
 
     function loadTableData(type) {
         currentType = type;
-        fetch(`/api/get_table?type=${type}`)
-            .then(res => res.json())
+        // app.py에 정의된 정확한 경로인 /api/get_table_data로 호출
+        fetch(`/api/get_table_data?type=${type}`)
+            .then(res => {
+                if (!res.ok) throw new Error('API 경로를 찾을 수 없습니다.');
+                return res.json();
+            })
             .then(response => {
-                document.getElementById('table-title').textContent = response.name;
+                // app.py 응답 키가 "table_name"이므로 이에 맞춰 수정
+                document.getElementById('table-title').textContent = response.table_name;
                 renderTable(response.data);
+            })
+            .catch(err => {
+                console.error("Fetch error:", err);
+                document.getElementById('tbody').innerHTML = '<tr><td colspan="10">데이터를 불러오는 중 오류가 발생했습니다.</td></tr>';
             });
     }
 
@@ -41,7 +50,7 @@
         thead.innerHTML = '';
         tbody.innerHTML = '';
 
-        if (data.length === 0) {
+        if (!data || data.length === 0) {
             tbody.innerHTML = '<tr><td colspan="10" style="padding: 20px; text-align: center;">데이터가 없습니다.</td></tr>';
             return;
         }
@@ -51,7 +60,7 @@
         const trHead = document.createElement('tr');
         headers.forEach(h => {
             const th = document.createElement('th');
-            th.style = "padding: 15px; border-bottom: 2px solid #444;";
+            th.style = "padding: 15px; border-bottom: 2px solid #444; background: #333;";
             th.textContent = h.toUpperCase();
             trHead.appendChild(th);
         });
@@ -64,7 +73,6 @@
                 const td = document.createElement('td');
                 td.style = "padding: 12px; border-bottom: 1px solid #333;";
                 
-                // 이미지 URL 처리
                 if (h === 'evidence_url') {
                     td.innerHTML = `<a href="${row[h]}" target="_blank" style="color: #007bff;">[증거보기]</a>`;
                 } else {
@@ -80,7 +88,6 @@
         loadTableData(currentType);
     }
 
-    // 초기 로드
     window.onload = () => loadTableData('2');
 </script>
 {% endblock %}
