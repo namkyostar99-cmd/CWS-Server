@@ -1,39 +1,11 @@
 <aside class="sidebar">
-    <div class="sidebar-header" style="padding: 20px; text-align: center;">
-        <img src="/static/assets/logo.png" alt="CWS LOGO" style="width: 80%; filter: brightness(0) invert(1);">
-    </div>
-
     <nav>
         <ul>
-            <li>
-                <a href="{{ url_for('index') }}" 
-                   data-page="overview" 
-                   class="{% if active_page == 'overview' %}active{% endif %}">
-                   실시간 모니터링
-                </a>
-            </li>
-
-            <li>
-                <a href="{{ url_for('monitoring') }}" 
-                   data-page="live" 
-                   class="{% if active_page == 'live' %}active{% endif %}">
-                   위반기록 DB
-                </a>
-            </li>
-
-            <li>
-                <a href="#" data-page="playback" class="{% if active_page == 'playback' %}active{% endif %}">
-                   Playback
-                </a>
-            </li>
-            <li>
-                <a href="#" data-page="settings" class="{% if active_page == 'settings' %}active{% endif %}">
-                   Settings
-                </a>
-            </li>
+            <li><a href="#" data-page="overview" class="{% if active_page == 'overview' %}active{% endif %}">Overview</a></li>
+            <li><a href="#" data-page="live" class="{% if active_page == 'live' %}active{% endif %}">Live Feeds</a></li>
+            <li><a href="#" data-page="playback" class="{% if active_page == 'playback' %}active{% endif %}">위반기록 조회</a></li>
         </ul>
     </nav>
-
     {% block sidebar_extra %}
     {% endblock %}
 </aside>
