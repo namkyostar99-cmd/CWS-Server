@@ -1,49 +1,90 @@
 {% extends 'layout.html' %}
 
 {% block content %}
-<div class="main-body" style="padding: 20px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <div>
-            <button onclick="loadTableData('1')" style="padding: 10px 20px; cursor: pointer;">테이블1 (설정)</button>
-            <button onclick="loadTableData('2')" style="padding: 10px 20px; cursor: pointer;">테이블2 (기록)</button>
+<div class="main-body" style="padding: 20px; background: #1a1b1e; min-height: 100vh;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; background: #2b2c32; padding: 15px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+        <div style="display: flex; gap: 10px;">
+            <button class="ctrl-btn" onclick="loadTableData('1')" id="btn-tab1">🛠️ 테이블1 (설정)</button>
+            <button class="ctrl-btn" onclick="loadTableData('2')" id="btn-tab2">🚨 테이블2 (기록)</button>
         </div>
-        <button class="btn primary" onclick="refreshTable()" style="padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 4px;">🔄 실시간 갱신</button>
+        <button class="ctrl-btn refresh" onclick="refreshTable()">🔄 실시간 데이터 갱신</button>
     </div>
 
-    <h3 style="color: #fff; margin-bottom: 10px;">📁 현재 조회 중인 테이블: <span id="table-title" style="color: #ffc107;">violations</span></h3>
+    <div style="margin-bottom: 15px; padding-left: 5px;">
+        <h3 style="color: #adb5bd; margin: 0; font-weight: 400;">
+            현재 활성 테이블: <span id="table-title" style="color: #007bff; font-weight: 700; text-transform: uppercase;">violations</span>
+        </h3>
+    </div>
 
-    <div class="table-wrapper" style="background: #2a2a2a; border-radius: 8px; overflow-x: auto; max-height: 600px;">
-        <table id="db-data-table" style="width: 100%; border-collapse: collapse; color: #ddd; text-align: left;">
-            <thead id="thead" style="background: #333; position: sticky; top: 0;">
-                </thead>
-            <tbody id="tbody">
+    <div class="table-container" style="background: #2b2c32; border-radius: 10px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+        <div style="max-height: 650px; overflow-y: auto;">
+            <table id="db-data-table" style="width: 100%; border-collapse: collapse; color: #e9ecef; text-align: left; font-size: 0.95rem;">
+                <thead id="thead" style="background: #343a40; position: sticky; top: 0; z-index: 10;">
+                    </thead>
+                <tbody id="tbody">
+                    <tr>
+                        <td colspan="10" style="padding: 40px; text-align: center; color: #6c757d;">데이터를 불러오는 중입니다...</td>
+                    </tr>
                 </tbody>
-        </table>
+            </table>
+        </div>
     </div>
 </div>
 
-<script>
-    let currentType = '2'; 
+<style>
+    /* 컨트롤 버튼 기본 스타일 */
+    .ctrl-btn {
+        padding: 10px 20px;
+        background: #3e4048;
+        color: white;
+        border: 1px solid #4d4f58;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.2s;
+    }
+    .ctrl-btn:hover { background: #4e505a; }
+    .ctrl-btn.active { background: #007bff; border-color: #0056b3; }
+    .ctrl-btn.refresh { background: #28a745; border-color: #1e7e34; }
+    .ctrl-btn.refresh:hover { background: #218838; }
 
+    /* 테이블 행 호버 효과 */
+    #tbody tr:hover { background: rgba(255, 255, 255, 0.05); }
+    th, td { padding: 15px; border-bottom: 1px solid #3e4048; }
+</style>
+
+<script>
+    let currentType = '2'; // 기본값은 위반 기록(2)
+
+    // 1. API를 통해 DB 데이터를 가져오는 함수
     function loadTableData(type) {
         currentType = type;
-        // app.py에 정의된 정확한 경로인 /api/get_table_data로 호출
+        
+        // 버튼 활성화 스타일 제어
+        document.getElementById('btn-tab1').classList.toggle('active', type === '1');
+        document.getElementById('btn-tab2').classList.toggle('active', type === '2');
+
+        // app.py의 @app.route('/api/get_table_data') 호출
         fetch(`/api/get_table_data?type=${type}`)
             .then(res => {
-                if (!res.ok) throw new Error('API 경로를 찾을 수 없습니다.');
+                if (!res.ok) throw new Error('Network response was not ok');
                 return res.json();
             })
             .then(response => {
-                // app.py 응답 키가 "table_name"이므로 이에 맞춰 수정
+                // app.py에서 내려주는 table_name과 data 사용
                 document.getElementById('table-title').textContent = response.table_name;
                 renderTable(response.data);
             })
             .catch(err => {
                 console.error("Fetch error:", err);
-                document.getElementById('tbody').innerHTML = '<tr><td colspan="10">데이터를 불러오는 중 오류가 발생했습니다.</td></tr>';
+                document.getElementById('tbody').innerHTML = 
+                    `<tr><td colspan="10" style="text-align:center; color:#ff4757; padding:20px;">
+                        데이터 로드 실패: API 엔드포인트를 확인하세요.
+                    </td></tr>`;
             });
     }
 
+    // 2. 데이터를 테이블 형식으로 화면에 그리는 함수
     function renderTable(data) {
         const thead = document.getElementById('thead');
         const tbody = document.getElementById('tbody');
@@ -51,17 +92,16 @@
         tbody.innerHTML = '';
 
         if (!data || data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="10" style="padding: 20px; text-align: center;">데이터가 없습니다.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="10" style="padding: 40px; text-align: center;">조회된 데이터가 없습니다.</td></tr>';
             return;
         }
 
-        // 헤더 생성
+        // 헤더 생성 (데이터의 키값을 기반으로 자동 생성)
         const headers = Object.keys(data[0]);
         const trHead = document.createElement('tr');
         headers.forEach(h => {
             const th = document.createElement('th');
-            th.style = "padding: 15px; border-bottom: 2px solid #444; background: #333;";
-            th.textContent = h.toUpperCase();
+            th.textContent = h.replace('_', ' ').toUpperCase();
             trHead.appendChild(th);
         });
         thead.appendChild(trHead);
@@ -71,13 +111,16 @@
             const tr = document.createElement('tr');
             headers.forEach(h => {
                 const td = document.createElement('td');
-                td.style = "padding: 12px; border-bottom: 1px solid #333;";
                 
-                if (h === 'evidence_url') {
-                    td.innerHTML = `<a href="${row[h]}" target="_blank" style="color: #007bff;">[증거보기]</a>`;
-                    console.log("Evidence URL:", row[h]);
+                // 증거보기 URL 처리 (about:blank 차단 방지 로직 적용)
+                if (h === 'evidence_url' && row[h]) {
+                    td.innerHTML = `
+                        <button onclick="openEvidence('${row[h]}')" 
+                                style="background:none; border:none; color:#3498db; cursor:pointer; text-decoration:underline; font-weight:bold; padding:0;">
+                            [증거보기]
+                        </button>`;
                 } else {
-                    td.textContent = row[h];
+                    td.textContent = row[h] !== null ? row[h] : '-';
                 }
                 tr.appendChild(td);
             });
@@ -85,10 +128,32 @@
         });
     }
 
+    // 3. 보안 차단 우회용 증거창 열기 함수
+    function openEvidence(url) {
+        if (!url || url === '-' || url.includes('undefined')) {
+            alert("유효한 증거 URL이 없습니다.");
+            return;
+        }
+        
+        console.log("시도 중인 URL:", url);
+        
+        // <a> 태그의 자동 이동이 차단될 때를 대비해 JS로 팝업 생성
+        // 브라우저 팝업 차단 설정이 되어있을 경우 허용이 필요할 수 있습니다.
+        const win = window.open(url, '_blank', 'noopener,noreferrer');
+        if (win) {
+            win.focus();
+        } else {
+            // 팝업이 차단된 경우 수동 복사 유도
+            alert("팝업이 차단되었습니다. 브라우저 설정에서 팝업을 허용해주세요.\nURL: " + url);
+        }
+    }
+
+    // 4. 데이터 갱신 버튼 함수
     function refreshTable() {
         loadTableData(currentType);
     }
 
+    // 페이지 로드 시 테이블2(위반 기록)를 기본으로 보여줌
     window.onload = () => loadTableData('2');
 </script>
 {% endblock %}
