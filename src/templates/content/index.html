@@ -1,81 +1,41 @@
 {% extends 'layout.html' %}
 
-{% block title %}CCTV 관제실 - 홈{% endblock %}
-
-{% block user_area %}
-<a class="btn" href="{{ url_for('monitoring') }}">모니터링 시작</a>
-{% endblock %}
-
 {% block content %}
 <div class="page" id="overview">
-    <h2>🎥 CCTV 관제 실시간 현황</h2>
-    
+    <div class="stats-container" style="margin-bottom: 20px;">
+        <h3 style="color: #fff;">📊 실시간 통계: <span id="violationCount" style="color: #ff4757;">{{ violations|length }}</span> 건 감지됨</h3>
+    </div>
+
     <div class="video-card" style="margin-bottom: 20px;">
-        <div class="video-frame" style="background: #000; border-radius: 8px; overflow: hidden; position: relative; min-height: 400px;">
-            <video id="video-feed" src="{{ current_stream }}" controls autoplay muted style="width: 100%; display: block;"></video>
-            
-            <div id="stream-overlay" style="position: absolute; top: 10px; left: 10px; color: #00ff00; font-size: 0.8rem; background: rgba(0,0,0,0.5); padding: 2px 5px; pointer-events: none;">
-                LIVE FEED
-            </div>
-
-            <input type="file" id="videoUploader" style="display: none;" accept="video/*">
-            <button id="uploadTrigger" style="position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; border: 1px solid #555; padding: 5px 10px; cursor: pointer; border-radius: 4px;">영상 업로드</button>
+        <div class="video-frame" style="background: #000; border-radius: 8px; overflow: hidden; position: relative; min-height: 450px;">
+            <video id="video-feed" src="{{ current_stream }}" controls autoplay muted style="width: 100%; height: 100%;"></video>
+            <div id="stream-overlay" style="position: absolute; top: 10px; left: 10px; color: #00ff00; font-size: 0.8rem; background: rgba(0,0,0,0.5); padding: 2px 5px;">LIVE FEED</div>
         </div>
     </div>
 
-    <div class="card" style="width: 100%; margin-bottom: 20px; background: #2a2a2a; border: 1px solid #444;">
-        <h3 style="margin-top: 0;">🌐 스트리밍 주소 설정</h3>
+    <div class="card" style="background: #2a2a2a; border: 1px solid #444;">
+        <h3 style="margin-top: 0; color: white;">🌐 스트리밍 설정</h3>
         <div style="display: flex; gap: 10px;">
-            <input type="text" id="indexServerAddr" value="{{ current_stream }}" 
-                   style="flex: 1; padding: 10px; border-radius: 4px; border: 1px solid #555; background: #1a1a1a; color: white;">
-            <button id="applyStreamBtn" class="btn primary">주소 적용</button>
+            <select id="urlSelectBox" style="flex: 1; padding: 10px; border-radius: 4px; background: #1a1a1a; color: white; border: 1px solid #555;">
+                <option value="{{ current_stream }}">현재 주소 (기본값)</option>
+                </select>
+            <button id="updateUrlBtn" class="btn primary">URL 갱신</button>
         </div>
-    </div>
-
-    <div class="cards">
-        <div class="card">카메라<br/><span class="big">12</span></div>
-        <div class="card">알람<br/><span class="big">3</span></div>
-        <div class="card">연결 상태<br/><span class="big">Good</span></div>
     </div>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <script>
-    // 1. HLS 재생 초기화 (JS 파일 수정 없이 HTML 내에서 처리)
-    const video = document.getElementById('video-feed');
-    const m3u8Url = "{{ current_stream }}";
-
-    if (m3u8Url.includes('.m3u8')) {
-        if (Hls.isSupported()) {
-            const hls = new Hls();
-            hls.loadSource(m3u8Url);
-            hls.attachMedia(video);
-            hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
-        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-            video.src = m3u8Url;
-        }
-    }
-
-    // 2. 주소 적용 버튼 로직
-    document.getElementById('applyStreamBtn').addEventListener('click', () => {
-        const newUrl = document.getElementById('indexServerAddr').value;
-        
+    // URL 갱신 버튼 이벤트
+    document.getElementById('updateUrlBtn').addEventListener('click', () => {
+        const selectedUrl = document.getElementById('urlSelectBox').value;
         fetch('/api/set_stream', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ url: newUrl })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if(data.status === "success") {
-                alert("스트리밍 주소가 갱신되었습니다.");
-                location.reload(); // 새로고침하여 새로운 스트림 로드
-            }
-        })
-        .catch(err => alert("에러 발생: " + err));
+            body: JSON.stringify({ url: selectedUrl })
+        }).then(() => location.reload());
     });
 </script>
 {% endblock %}

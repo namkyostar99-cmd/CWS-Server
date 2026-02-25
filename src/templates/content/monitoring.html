@@ -1,99 +1,87 @@
 {% extends 'layout.html' %}
 
-{% block title %}CCTV 관제실 - 모니터링{% endblock %}
-
-{% block sidebar_extra %}
-<section class="status">
-    <h4>✒️ 상태 및 기록</h4>
-    <div class="status-subtitle">신호등 전광판</div>
-    <div class="signal-board" id="signalBoard" data-state="RED">RED</div>
-    <div class="violation-wrap">
-        <div class="violation-title">위반 내역</div>
-        <div class="violation-list" id="violationList">
-            {% if violations %}
-                {% for v in violations[:5] %}
-                <div class="violation-item">[{{ v.timestamp }}] ID: {{ v.track_id }} 감지</div>
-                {% endfor %}
-            {% else %}
-                <div class="violation-item">기록이 없습니다.</div>
-            {% endif %}
-        </div>
-    </div>
-</section>
-{% endblock %}
-
 {% block content %}
 <div class="page" id="live">
-    <h2>📺 실시간 화면</h2>
-    <div class="video-card">
-        <div class="video-frame" id="videoFrame">
-            <img id="video-feed" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" alt="video feed" />
-            <div class="video-placeholder">영상 스트림 표시 영역</div>
-            <button id="uploadTrigger" class="upload-trigger" title="영상/카메라 업로드" aria-label="영상/카메라 업로드">🎥</button>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div>
+            <button class="btn" onclick="loadTable('config')" style="margin-right: 5px;">테이블1 (설정)</button>
+            <button class="btn" onclick="loadTable('violations')">테이블2 (기록)</button>
         </div>
-        <div class="roi-info" id="roiInfo">
-            <div>좌표 로그</div>
-            <pre id="roiLog" class="roi-log">(클릭 좌표가 여기에 표시됩니다)</pre>
-        </div>
-        <div id="roiControls" class="roi-controls">
-            <button id="roiStart" class="btn primary">ROI 설정 시작</button>
-            <button id="roiReset" class="btn">초기화</button>
-            <button id="roiDone" class="btn">설정 완료</button>
-        </div>
-        <div class="upload-section">
-            <div class="upload-row">
-                <input id="videoUploader" type="file" accept="image/*,video/*" class="upload-input" />
-            </div>
-        </div>
+        <button class="btn primary" onclick="refreshCurrentTable()">🔄 실시간 갱신</button>
+    </div>
+
+    <h3 style="color: #fff;">📁 현재 DB: <span id="tableNameDisplay" style="color: #00ff00;">violations</span></h3>
+
+    <div class="table-container" style="max-height: 600px; overflow-y: auto; background: #1a1a1a; border: 1px solid #444; border-radius: 8px;">
+        <table id="dbDataTable" style="width: 100%; border-collapse: collapse; color: #ccc; text-align: left;">
+            <thead id="tableHead" style="background: #333; position: sticky; top: 0;">
+                </thead>
+            <tbody id="tableBody">
+                </tbody>
+        </table>
     </div>
 </div>
+{% endblock %}
 
-<div class="page hidden" id="overview">
-    <h2>🎥 CCTV 관제실</h2>
-    <div class="cards">
-        <div class="card">카메라<br/><span class="big">12</span></div>
-        <div class="card">알람<br/><span class="big">{{ violations|length }}</span></div>
-        <div class="card">연결 상태<br/><span class="big">Good</span></div>
-    </div>
-</div>
+{% block extra_js %}
+<script>
+    let currentTableType = 'violations';
 
-<div class="page hidden" id="playback">
-    <h2>🚨 위반 차량 조회</h2>
-    <div class="playback-grid" id="playbackGrid">
-        {% if violations %}
-            {% for v in violations %}
-            <div class="playback-card">
-                <div class="playback-img">
-                    {% if v.url %}
-                        <img src="{{ v.url }}" alt="Violation" style="width:100%; border-radius:4px;">
-                    {% else %}
-                        차량 이미지
-                    {% endif %}
-                </div>
-                <div class="playback-info">
-                    <div class="playback-title">위반 감지 (ID: {{ v.track_id }})</div>
-                    <div class="playback-meta">파일명: {{ v.filename }}</div>
-                    <div class="playback-meta">시간: {{ v.timestamp }}</div>
-                    <div class="playback-meta">위치: 관제구역</div>
-                    {% if v.url %}
-                    <div class="playback-meta">
-                        <a href="{{ v.url }}" target="_blank" style="color: #ffcc00; text-decoration: underline;">[증거 확인]</a>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-            {% endfor %}
-        {% else %}
-            <p style="color: white; padding: 20px;">검색된 위반 내역이 없습니다.</p>
-        {% endif %}
-    </div>
-</div>
+    function loadTable(type) {
+        currentTableType = type;
+        document.getElementById('tableNameDisplay').textContent = type === 'config' ? 'stream_config' : 'violations';
+        
+        // 실제 API 호출 (예시 주소)
+        fetch(`/api/get_table_data?type=${type}`)
+            .then(res => res.json())
+            .then(data => renderDataTable(data));
+    }
 
-<div class="page hidden" id="settings">
-    <h2>⚙️ 설정</h2>
-    <label>서버 주소<br/><input type="text" id="serverAddr" value="rtsp://example"/></label>
-    <label>해상도<br/>
-        <select id="resolution"><option>1080p</option><option>720p</option><option>480p</option></select>
-    </label>
-</div>
+    function renderDataTable(data) {
+        const head = document.getElementById('tableHead');
+        const body = document.getElementById('tableBody');
+        head.innerHTML = '';
+        body.innerHTML = '';
+
+        if (data.length === 0) {
+            body.innerHTML = '<tr><td colspan="5" style="padding: 20px; text-align: center;">데이터가 없습니다.</td></tr>';
+            return;
+        }
+
+        // 1. 헤더 생성 (데이터의 키값 기준)
+        const keys = Object.keys(data[0]);
+        const trHead = document.createElement('tr');
+        keys.forEach(key => {
+            const th = document.createElement('th');
+            th.style = "padding: 12px; border-bottom: 1px solid #444;";
+            th.textContent = key.toUpperCase();
+            trHead.appendChild(th);
+        });
+        head.appendChild(trHead);
+
+        // 2. 바디 생성
+        data.forEach(row => {
+            const tr = document.createElement('tr');
+            keys.forEach(key => {
+                const td = document.createElement('td');
+                td.style = "padding: 12px; border-bottom: 1px solid #333;";
+                // 증거 URL(이미지)인 경우 링크나 썸네일로 표시
+                if (key === 'evidence_url' || key === 'image') {
+                    td.innerHTML = `<a href="${row[key]}" target="_blank" style="color: #00ff00;">보기</a>`;
+                } else {
+                    td.textContent = row[key];
+                }
+                tr.appendChild(td);
+            });
+            body.appendChild(tr);
+        });
+    }
+
+    function refreshCurrentTable() {
+        loadTable(currentTableType);
+    }
+
+    // 초기 로드
+    document.addEventListener('DOMContentLoaded', () => loadTable('violations'));
+</script>
 {% endblock %}
