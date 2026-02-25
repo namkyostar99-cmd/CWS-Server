@@ -20,13 +20,26 @@ document.addEventListener('DOMContentLoaded', () => {
     if(link) link.classList.add('active');
   }
 
-  // navigation
+  // [수정/추가됨] navigation: 기존 원본 구조를 유지하되 페이지 이동 로직 추가
   document.querySelectorAll('.sidebar a').forEach(a => {
     a.addEventListener('click', (e) => {
+      // 1. 위반기록 조회(playback)나 Live Feeds(overview) 클릭 시 실제 페이지 이동
+      const targetPage = a.dataset.page;
+      
+      if (targetPage === 'playback') {
+        // e.preventDefault()를 무시하고 강제 이동
+        window.location.href = '/monitoring';
+        return; 
+      } else if (targetPage === 'overview') {
+        window.location.href = '/';
+        return;
+      }
+
+      // 2. 그 외 기존 logic.js 동작 (단일 페이지 내 전환용)
       e.preventDefault();
       document.querySelectorAll('.sidebar a').forEach(x => x.classList.remove('active'));
       a.classList.add('active');
-      showPage(a.dataset.page);
+      showPage(targetPage);
     });
   });
 
@@ -65,42 +78,45 @@ document.addEventListener('DOMContentLoaded', () => {
     roiMode = false;
     roiStart.textContent = 'ROI 설정 시작';
     // TODO: Flask API로 ROI 좌표 전송
-    // fetch('/api/roi', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(roiPoints) })
     alert(`좌표 ${roiPoints.length}개 저장됨`);
   });
 
-  videoFeed.addEventListener('click', (e) => {
-    if(!roiMode) return;
-    const rect = videoFeed.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width;
-    const y = (e.clientY - rect.top) / rect.height;
-    roiPoints.push({ x, y, px: Math.round(e.clientX - rect.left), py: Math.round(e.clientY - rect.top) });
-    setRoiLog();
-  });
+  // videoFeed가 존재할 때만 리스너 등록 (에러 방지)
+  if(videoFeed) {
+    videoFeed.addEventListener('click', (e) => {
+      if(!roiMode) return;
+      const rect = videoFeed.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width;
+      const y = (e.clientY - rect.top) / rect.height;
+      roiPoints.push({ x, y, px: Math.round(e.clientX - rect.left), py: Math.round(e.clientY - rect.top) });
+      setRoiLog();
+    });
+  }
 
   let currentObjectUrl = null;
 
-  videoUploader.addEventListener('change', (e) => {
-    const file = e.target.files?.[0];
-    if(!file) return;
-    if(currentObjectUrl){
-      URL.revokeObjectURL(currentObjectUrl);
-      currentObjectUrl = null;
-    }
-    const url = URL.createObjectURL(file);
-    currentObjectUrl = url;
-    videoFeed.src = url;
-  });
+  if(videoUploader) {
+    videoUploader.addEventListener('change', (e) => {
+      const file = e.target.files?.[0];
+      if(!file) return;
+      if(currentObjectUrl){
+        URL.revokeObjectURL(currentObjectUrl);
+        currentObjectUrl = null;
+      }
+      const url = URL.createObjectURL(file);
+      currentObjectUrl = url;
+      if(videoFeed) videoFeed.src = url;
+    });
+  }
 
-  uploadTrigger.addEventListener('click', () => {
-    // allow re-uploading the same file by resetting input value
-    videoUploader.value = '';
-    videoUploader.click();
-  });
+  if(uploadTrigger) {
+    uploadTrigger.addEventListener('click', () => {
+      videoUploader.value = '';
+      videoUploader.click();
+    });
+  }
 
   // Playback: Add new violation card dynamically
-  // TODO: Flask에서는 서버에서 위반 데이터를 받아와서 동적으로 추가
-  // fetch('/api/violations').then(res => res.json()).then(data => { ... })
   window.addViolationCard = function(data) {
     const grid = document.getElementById('playbackGrid');
     if(!grid) return;
@@ -120,30 +136,13 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // initial render
-  showPage('live');
-  setRoiLog();
-
-  document.addEventListener('DOMContentLoaded', function() {
-    // 위반기록 조회 버튼(data-page="playback")을 찾아 클릭 이벤트 추가
-    const dbMenuBtn = document.querySelector('a[data-page="playback"]');
-    
-    if (dbMenuBtn) {
-        dbMenuBtn.addEventListener('click', function(e) {
-            // 기존 logic.js의 기본 동작(e.preventDefault 등)이 있다면 무시하고 강제 이동
-            e.preventDefault(); 
-            window.location.href = '/monitoring';
-        });
-    }
-
-    // 추가로 Live Feeds(data-page="overview") 클릭 시 홈으로 이동 보장
-    const liveMenuBtn = document.querySelector('a[data-page="overview"]');
-    if (liveMenuBtn) {
-        liveMenuBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            window.location.href = '/';
-        });
-    }
- });
-
+  // 현재 URL 경로를 확인하여 페이지 초기 상태 설정
+  const path = window.location.pathname;
+  if(path === '/monitoring') {
+    setActiveNav('playback');
+    showPage('playback');
+  } else {
+    showPage('live');
+    setRoiLog();
+  }
 });
-
