@@ -53,3 +53,20 @@ def get_all_violations():
 
 def get_all_stream_configs():
     return get_table_data_from_db('stream_config')
+
+# [추가] 스트리밍 URL 영속화 — 서버 재시작 후에도 마지막 URL 유지
+def save_stream_url(url):
+    conn = get_db_connection()
+    conn.execute(
+        "INSERT OR REPLACE INTO stream_config (stream_url) VALUES (?)", (url,)
+    )
+    conn.commit()
+    conn.close()
+
+def get_latest_stream_url(default):
+    conn = get_db_connection()
+    row = conn.execute(
+        "SELECT stream_url FROM stream_config ORDER BY id DESC LIMIT 1"
+    ).fetchone()
+    conn.close()
+    return row['stream_url'] if row else default
