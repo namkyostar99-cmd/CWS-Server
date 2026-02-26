@@ -1,8 +1,13 @@
 import os
-from flask import Flask, render_template, jsonify, request
+import requests
+import io
+from flask import Flask, render_template, jsonify, request, send_file
 from database import init_db, save_violation_to_db, get_all_violations, get_table_data_from_db, get_all_stream_configs
 
 app = Flask(__name__)
+
+# [중요 설정] 엣지 서버의 주소 (본인의 엣지 PC 공인 IP 또는 내부 IP로 수정)
+EDGE_SERVER_URL = "http://[내_PC의_공인_IP]:5001" 
 
 # 전역 변수
 streaming_url = "http://210.99.70.120:1935/live/cctv006.stream/playlist.m3u8"
@@ -14,7 +19,6 @@ with app.app_context():
 def index():
     global streaming_url
     violations = get_all_violations()
-    # 인덱스 페이지의 목록 박스용 URL 리스트
     configs = get_all_stream_configs()
     return render_template('content/index.html', 
                            active_page='overview', 
@@ -31,7 +35,31 @@ def monitoring():
                            violations=violations,
                            current_stream=streaming_url)
 
-# --- 신규 추가: 모니터링 페이지 동적 테이블 API ---
+# --- [신규 추가] 엣지 서버 이미지 프록시 로직 ---
+@app.route('/view_evidence/<filename>')
+def view_evidence(filename):
+    """
+    사용자가 증거보기를 누르면 호출됨.
+    중앙 서버가 엣지 서버에 직접 접속하여 이미지를 가져온 뒤 사용자에게 전달.
+    """
+    try:
+        # 엣지 서버의 이미지 파일 전송 엔드포인트 호출
+        edge_api_url = f"{EDGE_SERVER_URL}/api/get_evidence_file/{filename}"
+        response = requests.get(edge_api_url, timeout=5)
+        
+        if response.status_code == 200:
+            # 엣지로부터 받은 바이너리 데이터를 메모리에서 파일 객체로 변환하여 전송
+            return send_file(
+                io.BytesIO(response.content),
+                mimetype='image/jpeg'
+            )
+        else:
+            return f"<h3>엣지 서버 응답 오류 (상태코드: {response.status_code})</h3>", 404
+            
+    except Exception as e:
+        return f"<h3>엣지 서버 연결 실패: {e}</h3>", 500
+
+# --- 모니터링 페이지 동적 테이블 API ---
 @app.route('/api/get_table_data')
 def api_get_table_data():
     table_type = request.args.get('type') # '1' 또는 '2'
@@ -42,10 +70,10 @@ def api_get_table_data():
         "data": data
     })
 
-# --- 신규 추가: 엣지로부터 위반 데이터 수신 API ---
+# --- 엣지로부터 위반 데이터 수신 API ---
 @app.route('/api/sync/violations', methods=['POST'])
 def sync_violations():
-    data = request.json # 엣지에서 전송한 리스트
+    data = request.json 
     if not data: return jsonify({"status": "fail"}), 400
     for item in data:
         save_violation_to_db(

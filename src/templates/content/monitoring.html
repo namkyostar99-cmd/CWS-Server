@@ -84,7 +84,7 @@
             });
     }
 
-    // 2. 데이터를 테이블 형식으로 화면에 그리는 함수
+// 2. 데이터를 테이블 형식으로 화면에 그리는 함수
     function renderTable(data) {
         const thead = document.getElementById('thead');
         const tbody = document.getElementById('tbody');
@@ -112,12 +112,16 @@
             headers.forEach(h => {
                 const td = document.createElement('td');
                 
-                // 증거보기 URL 처리 (about:blank 차단 방지 로직 적용)
+                // [수정 로직] 증거보기 처리: 중앙 서버의 프록시 엔드포인트를 호출
                 if (h === 'evidence_url' && row[h]) {
+                    // URL에서 파일명만 추출 (예: v_1_1234.jpg)
+                    const parts = row[h].split('/');
+                    const filename = parts[parts.length - 1];
+                    
                     td.innerHTML = `
-                        <button onclick="openEvidence('${row[h]}')" 
-                                style="background:none; border:none; color:#3498db; cursor:pointer; text-decoration:underline; font-weight:bold; padding:0;">
-                            [증거보기]
+                        <button onclick="openEvidenceProxy('${filename}')" 
+                                style="background:#007bff; border:none; color:white; cursor:pointer; padding:6px 12px; border-radius:4px; font-weight:bold;">
+                            📸 증거보기
                         </button>`;
                 } else {
                     td.textContent = row[h] !== null ? row[h] : '-';
@@ -126,6 +130,27 @@
             });
             tbody.appendChild(tr);
         });
+    }
+
+    // [신규 함수] 서버 프록시를 통해 이미지를 새 창으로 여는 로직
+    function openEvidenceProxy(filename) {
+        if (!filename || filename === '-' || filename.includes('undefined')) {
+            alert("유효한 파일명이 없습니다.");
+            return;
+        }
+        
+        // 중앙 서버(EC2)의 /view_evidence/<filename> 라우트를 호출
+        // 이 라우트가 엣지로부터 이미지를 대신 가져와서 보여줍니다.
+        const proxyUrl = `/view_evidence/${filename}`;
+        
+        console.log("프록시 요청 파일명:", filename);
+        
+        const win = window.open(proxyUrl, '_blank', 'width=1000,height=800,noopener,noreferrer');
+        if (win) {
+            win.focus();
+        } else {
+            alert("팝업이 차단되었습니다. 브라우저 설정에서 허용해주세요.");
+        }
     }
 
     // 3. 보안 차단 우회용 증거창 열기 함수
