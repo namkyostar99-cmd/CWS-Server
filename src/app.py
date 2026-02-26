@@ -7,7 +7,7 @@ from database import init_db, save_violation_to_db, get_all_violations, get_tabl
 app = Flask(__name__)
 
 # [중요 설정] 엣지 서버의 주소 (본인의 엣지 PC 공인 IP 또는 내부 IP로 수정)
-EDGE_SERVER_URL = "http://127.0.0.1:5001"
+EDGE_SERVER_URL = "http://119.194.93.220:5001"
 # 전역 변수
 streaming_url = "http://210.99.70.120:1935/live/cctv006.stream/playlist.m3u8"
 
@@ -44,13 +44,13 @@ def view_evidence(filename):
     try:
         # 엣지 서버의 이미지 파일 전송 엔드포인트 호출
         edge_api_url = f"{EDGE_SERVER_URL}/api/get_evidence_file/{filename}"
-        response = requests.get(edge_api_url, timeout=5)
+        response = requests.get(edge_api_url, timeout=60)
         
         if response.status_code == 200:
             # 엣지로부터 받은 바이너리 데이터를 메모리에서 파일 객체로 변환하여 전송
             return send_file(
                 io.BytesIO(response.content),
-                mimetype='image/jpeg'
+                mimetype='image/jpg'
             )
         else:
             return f"<h3>엣지 서버 응답 오류 (상태코드: {response.status_code})</h3>", 404
