@@ -7,7 +7,7 @@ from database import init_db, save_violation_to_db, get_all_violations, get_tabl
 app = Flask(__name__)
 
 # [중요 설정] 엣지 서버의 주소 (본인의 엣지 PC 공인 IP 또는 내부 IP로 수정)
-EDGE_SERVER_URL = "http://119.194.93.220:5001"
+EDGE_SERVER_URL = "https://stacey-unjeweled-mindi.ngrok-free.dev"
 # 기본 스트리밍 URL (DB에 저장된 값이 없을 때만 사용)
 DEFAULT_STREAM_URL = "http://210.99.70.120:1935/live/cctv006.stream/playlist.m3u8"
 
@@ -45,8 +45,10 @@ def view_evidence(filename):
     """
     try:
         # 엣지 서버의 이미지 파일 전송 엔드포인트 호출
+        # ngrok 무료 플랜 경고 페이지 우회 헤더
+        NGROK_HEADERS = {"ngrok-skip-browser-warning": "true"}
         edge_api_url = f"{EDGE_SERVER_URL}/api/get_evidence_file/{filename}"
-        response = requests.get(edge_api_url, timeout=60)
+        response = requests.get(edge_api_url, headers=NGROK_HEADERS, timeout=5)
         
         if response.status_code == 200:
             # 엣지로부터 받은 바이너리 데이터를 메모리에서 파일 객체로 변환하여 전송
@@ -57,8 +59,12 @@ def view_evidence(filename):
         else:
             return f"<h3>엣지 서버 응답 오류 (상태코드: {response.status_code})</h3>", 404
             
+    except requests.exceptions.ConnectTimeout:
+        return "<h3>엣지 서버 연결 타임아웃 — 방화벽/포트포워딩을 확인하세요 (port 5001)</h3>", 504
+    except requests.exceptions.ConnectionError:
+        return "<h3>엣지 서버에 연결할 수 없습니다 — 엣지 서버가 실행 중인지 확인하세요</h3>", 502
     except Exception as e:
-        return f"<h3>엣지 서버 연결 실패: {e}</h3>", 500
+        return f"<h3>오류: {e}</h3>", 500
 
 # --- 모니터링 페이지 동적 테이블 API ---
 @app.route('/api/get_table_data')
