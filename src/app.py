@@ -7,8 +7,7 @@ from database import init_db, save_violation_to_db, get_all_violations, get_tabl
 app = Flask(__name__)
 
 # [중요 설정] 엣지 서버의 주소 (본인의 엣지 PC 공인 IP 또는 내부 IP로 수정)
-EDGE_SERVER_URL = "http://127.0.0.1/:5001" 
-
+EDGE_SERVER_URL = "http://127.0.0.1:5001"
 # 전역 변수
 streaming_url = "http://210.99.70.120:1935/live/cctv006.stream/playlist.m3u8"
 
