@@ -35,28 +35,35 @@ def monitoring():
                            current_stream=streaming_url)
 
 # --- [신규 추가] 엣지 서버 이미지 프록시 로직 ---
+# EDGE_SERVER_URL은 엣지 서버의 공인 IP와 포트여야 합니다.
+
 @app.route('/view_evidence/<filename>')
 def view_evidence(filename):
     """
-    사용자가 증거보기를 누르면 호출됨.
-    중앙 서버가 엣지 서버에 직접 접속하여 이미지를 가져온 뒤 사용자에게 전달.
+    중앙 서버가 엣지 서버의 /evidence/ 경로에서 이미지를 가져와 사용자에게 전달
     """
     try:
-        # 엣지 서버의 이미지 파일 전송 엔드포인트 호출
-        edge_api_url = f"{EDGE_SERVER_URL}/api/get_evidence_file/{filename}"
-        response = requests.get(edge_api_url, timeout=60)
+        # 1. 실제 이미지가 서빙되는 경로로 수정 (/api/get_evidence_file/ -> /evidence/)
+        edge_api_url = f"{EDGE_SERVER_URL}/evidence/{filename}"
+        
+        # 2. 엣지 서버에 요청 (timeout은 연결 5초, 응답 대기 10초 정도로 설정 권장)
+        response = requests.get(edge_api_url, timeout=(5, 10))
         
         if response.status_code == 200:
-            # 엣지로부터 받은 바이너리 데이터를 메모리에서 파일 객체로 변환하여 전송
+            # 엣지로부터 받은 바이너리 데이터를 메모리 버퍼에 담아 전송
             return send_file(
                 io.BytesIO(response.content),
-                mimetype='image/jpg'
+                mimetype='image/jpeg' # jpg의 정식 mimetype은 image/jpeg입니다.
             )
         else:
-            return f"<h3>엣지 서버 응답 오류 (상태코드: {response.status_code})</h3>", 404
+            return f"<h3>파일을 찾을 수 없습니다. (엣지 응답 코드: {response.status_code})</h3>", 404
             
+    except requests.exceptions.ConnectTimeout:
+        return "<h3>엣지 서버 연결 시간 초과: 서버가 꺼져있거나 방화벽/공유기 설정을 확인하세요.</h3>", 504
+    except requests.exceptions.ConnectionError:
+        return "<h3>엣지 서버 연결 거부: 주소가 틀렸거나 포트 포워딩이 안 되어 있습니다.</h3>", 502
     except Exception as e:
-        return f"<h3>엣지 서버 연결 실패: {e}</h3>", 500
+        return f"<h3>기타 오류 발생: {str(e)}</h3>", 500
 
 # --- 모니터링 페이지 동적 테이블 API ---
 @app.route('/api/get_table_data')
